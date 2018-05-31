@@ -16,6 +16,9 @@ from .workspaces_handler import WorkspacesHandler
 from .settings_handler import SettingsHandler
 from .themes_handler import ThemesHandler
 
+from .collab_handler import CollaborationSocketHandler, CollaborationTestHandler
+from .collab_manager import CollaborationManager
+
 # -----------------------------------------------------------------------------
 # Module globals
 # -----------------------------------------------------------------------------
@@ -27,6 +30,7 @@ default_workspaces_api_url = '/lab/api/workspaces/'
 default_settings_url = '/lab/api/settings/'
 default_themes_url = '/lab/api/themes/'
 default_tree_url = '/lab/tree/'
+default_collab_url = '/lab/collab/'
 
 
 DEFAULT_TEMPLATE = template.Template("""
@@ -160,6 +164,9 @@ class LabConfig(HasTraits):
     tree_url = Unicode(default_tree_url,
                        help='The url path of the tree handler.')
 
+    collab_url = Unicode(default_collab_url,
+                         help='The url path of the collaboration handler.')
+
     cache_files = Bool(True,
                        help=('Whether to cache files on the server. '
                              'This should be `True` except in dev mode.'))
@@ -240,6 +247,16 @@ def add_handlers(web_app, config):
                 'no_cache_paths': no_cache_paths
             }
         ))
+
+    # TODO: better collab switch
+    if config.collab_url:
+        collab_manager = CollaborationManager()
+        handlers.extend([
+            # TODO remove
+            (ujoin(config.collab_url, 'test'), CollaborationTestHandler),
+            (ujoin(config.collab_url), CollaborationSocketHandler,
+             dict(collab_manager=collab_manager))
+        ])
 
     # Let the lab handler act as the fallthrough option instead of a 404.
     fallthrough_url = ujoin(base_url, config.page_url, r'.*')
